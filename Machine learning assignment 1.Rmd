@@ -1,0 +1,39 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+```{r}
+source<-"https://www.kaggle.com/datasets/geoffnel/evs-one-electric-vehicle-dataset"
+
+#head("cars")
+summary("cars")
+#Summary is for quantative varable
+
+#Table is for qualitative variables
+table(cars$Brand)
+table(cars$Model)
+table(cars$RapidCharge)
+#table(cars$Seats)
+
+```
+
+```{r}
+#Log is transformation of atleast one variable
+log(cars$Seats)
+```
+
+```{r}
+tinytex::install_tinytex()
+
+#Plot any one quantitative variable 
+plot(cars$Seats)
+```
+
+
+```{r}
+#Scatter plot
+x=(cars$AccelSec)
+y=(cars$Range_Km)
+plot(x,y)
+```
