@@ -1,0 +1,179 @@
+---
+title: "Assignment 02"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+date: "2023-10-01"
+---
+
+
+```{r}
+library(readr)
+data <- read_csv("UniversalBank.csv", show_col_types = FALSE)
+```
+
+
+### Task 1
+
+Consider the following customer:
+Age = 40, Experience = 10, Income = 84, Family = 2, CCAvg = 2, Education_1 = 0, Education_2 = 1, Education_3 = 0, Mortgage = 0, Securities Account = 0, CD Account = 0, Online = 1, and Credit Card = 1. Perform a k-NN classification with all predictors except ID and ZIP code using k = 1. Remember to transform categorical predictors with more than two categories into dummy variables first. Specify the success class as 1 (loan acceptance), and use the default cutoff value of 0.5. How would this customer be classified? 
+
+```{r}
+# Load necessary libraries
+library(dplyr)
+library(caret)
+library(class)
+
+# Read data from CSV file
+data <- read_csv("UniversalBank.csv", show_col_types = FALSE)
+
+# Data Preprocessing
+
+# Create dummy variables for Education
+data$Education_1 <- as.integer(data$Education == 1)
+data$Education_2 <- as.integer(data$Education == 2)
+data$Education_3 <- as.integer(data$Education == 3)
+
+# Remove unnecessary columns
+data <- select(data, -c('ID', 'ZIP Code', 'Education'))
+
+# Data Splitting
+
+# Split the data into training (60%) and validation (40%) sets
+index <- sample(1:nrow(data), nrow(data) * 0.6)
+train_data <- data[index, ]
+valid_data <- data[-index, ]
+
+# New Customer Data
+new_customer <- data.frame(
+  Age = 40, 
+  Experience = 10, 
+  Income = 84, 
+  Family = 2, 
+  CCAvg = 2, 
+  Education_1 = 0, 
+  Education_2 = 1, 
+  Education_3 = 0, 
+  Mortgage = 0, 
+  Securities.Account = 0, 
+  CD.Account = 0, 
+  Online = 1, 
+  CreditCard = 1
+)
+
+# Model Building and Prediction
+
+# Perform k-NN classification with k = 1
+knn_pred <- knn(train_data[, -7], valid_data[, -7], train_data$`Personal Loan` , k = 1)
+
+# Display the classification result for the new customer
+print("Classification Result for the New Customer:")
+print(knn_pred)
+```
+
+### Task 2
+
+```{r}
+
+# Use cross-validation to find the optimal k
+k_values <- seq(1, 100, by = 2)  # or another range of your choice
+error_rates <- sapply(k_values, function(k) {
+  knn_pred <- knn(train_data[, -7], valid_data[, -7], cl=train_data$"Personal Loan", k=k)
+  mean(knn_pred != valid_data$"Personal Loan")
+})
+
+# Find the k with the lowest error rate
+optimal_k <- k_values[which.min(error_rates)]
+optimal_k
+```
+
+### Task 3
+c.Show the confusion matrix for the validation data that results from using the best k.
+```{r}
+# Perform k-NN classification with the optimal k
+knn_pred_optimal <- knn(train_data[, -7], valid_data[, -7], cl=train_data$"Personal Loan", k=optimal_k)
+
+# Create a confusion matrix
+confusion_matrix <- table(Predicted = knn_pred_optimal, Actual = valid_data$"Personal Loan")
+
+# Show the confusion matrix
+print(confusion_matrix)
+
+```
+
+### Task 4
+Consider the following customer: Age = 40, Experience = 10, Income = 84, Family = 2, CCAvg = 2, Education_1 = 0, Education_2 = 1, Education_3 = 0, Mortgage = 0, Securities Account = 0, CD Account = 0, Online = 1 and Credit Card = 1. Classify the customer using the best k.
+
+```{r}
+# New customer data
+new_customer <- data.frame(
+  Age = 40, 
+  Experience = 10, 
+  Income = 84, 
+  Family = 2, 
+  CCAvg = 2, 
+  Education_1 = 0, 
+  Education_2 = 1, 
+  Education_3 = 0, 
+  Mortgage = 0, 
+  Securities.Account = 0, 
+  CD.Account = 0, 
+  Online = 1, 
+  CreditCard = 1
+)
+
+# Perform k-NN classification for the new customer using the optimal k
+knn_pred_new_customer <- knn(train_data[, -7], new_customer, cl=train_data$"Personal Loan", k=optimal_k)
+
+# Show the classification for the new customer
+print(knn_pred_new_customer)
+
+```
+
+### Task 5
+Repartition the data, this time into training, validation, and test sets (50% : 30% : 20%). Apply the k-NN method with the k chosen above. Compare the confusion matrix of the test set with that of the training and validation sets. Comment on the differences and their reason.
+
+```{r}
+# Set the seed for reproducibility
+set.seed(123)
+
+# Repartition the data into training (50%), validation (30%), and test (20%) sets
+index_train <- sample(1:nrow(data), nrow(data) * 0.5)
+index_valid <- sample(setdiff(1:nrow(data), index_train), nrow(data) * 0.3)
+index_test <- setdiff(1:nrow(data), c(index_train, index_valid))
+
+train_data <- data[index_train, ]
+valid_data <- data[index_valid, ]
+test_data <- data[index_test, ]
+
+# Perform k-NN classification with the optimal k on training set
+knn_pred_train <- knn(train_data[, -7], train_data[, -7], cl=train_data$"Personal Loan", k=optimal_k)
+
+# Perform k-NN classification with the optimal k on validation set
+knn_pred_valid <- knn(train_data[, -7], valid_data[, -7], cl=train_data$"Personal Loan", k=optimal_k)
+
+# Perform k-NN classification with the optimal k on test set
+knn_pred_test <- knn(train_data[, -7], test_data[, -7], cl=train_data$"Personal Loan", k=optimal_k)
+
+# Create confusion matrices
+confusion_matrix_train <- table(Predicted = knn_pred_train, Actual = train_data$"Personal Loan")
+confusion_matrix_valid <- table(Predicted = knn_pred_valid, Actual = valid_data$"Personal Loan")
+confusion_matrix_test <- table(Predicted = knn_pred_test, Actual = test_data$"Personal Loan")
+
+# Show the confusion matrices
+print("Confusion Matrix - Training Set:")
+
+
+print(confusion_matrix_train)
+
+print("Confusion Matrix - Validation Set:")
+print(confusion_matrix_valid)
+
+print("Confusion Matrix - Test Set:")
+print(confusion_matrix_test)
+
+```
+
+**Reason**
+The model performs well on the training set but struggles to generalize on the test set, resulting in more false positives and false negatives in the test set's confusion matrix compared to the validation set. This indicates potential overfitting to the training data.
