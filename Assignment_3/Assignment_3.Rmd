@@ -1,0 +1,125 @@
+---
+title: "Assignment 3"
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+date: "10-14-2023"
+author : " SAI ROHITH GUDA "
+---
+### Task a
+
+```{r}
+# Load necessary libraries
+library(reshape2)
+library(dplyr)
+
+# Load necessary library
+library(dplyr)
+
+# Read the CSV file
+data <- read.csv("UniversalBank.csv")
+
+# Select the relevant columns
+selected_data <- data %>% select(Online, CreditCard, Personal.Loan)
+
+# Set seed for reproducibility
+set.seed(42)
+
+# Split data into training and validation sets
+sample_size <- floor(0.6 * nrow(selected_data))
+train_index <- sample(seq_len(nrow(selected_data)), size = sample_size)
+
+train_data <- selected_data[train_index, ]
+validation_data <- selected_data[-train_index, ]
+
+pivot_table <- table(train_data$CreditCard, train_data$Online, train_data$Personal.Loan)
+print(paste("Pivot table for CreditCard, Online, and Personal.Loan:\n", pivot_table))
+
+
+
+```
+
+### Task b
+```{r}
+prob_acceptance <- pivot_table[2, 2, 2] / (pivot_table[2, 2, 1] + pivot_table[2, 2, 2])
+print(paste("Probability of loan acceptance given CC=1 and Online=1:", round(prob_acceptance, 4)))
+
+```
+
+### Task c
+```{r}
+
+pivot_loan_online <- table(train_data$Personal.Loan, train_data$Online)
+
+pivot_loan_cc <- table(train_data$Personal.Loan, train_data$CreditCard)
+
+print("Pivot table for Personal.Loan and Online:")
+print(pivot_loan_online)
+print("\nPivot table for Personal.Loan and CreditCard:")
+print(pivot_loan_cc)
+
+
+```
+
+### Task d
+```{r}
+# P(CC = 1 | Loan = 1)
+p_cc_given_loan1 <- pivot_loan_cc[2, 2] / (pivot_loan_cc[2, 1] + pivot_loan_cc[2, 2])
+
+# P(Online = 1 | Loan = 1)
+p_online_given_loan1 <- pivot_loan_online[2, 2] / (pivot_loan_online[2, 1] + pivot_loan_online[2, 2])
+
+# P(Loan = 1)
+p_loan1 <- sum(train_data$Personal.Loan == 1) / nrow(train_data)
+
+# P(CC = 1 | Loan = 0)
+p_cc_given_loan0 <- pivot_loan_cc[1, 2] / (pivot_loan_cc[1, 1] + pivot_loan_cc[1, 2])
+
+# P(Online = 1 | Loan = 0)
+p_online_given_loan0 <- pivot_loan_online[1, 2] / (pivot_loan_online[1, 1] + pivot_loan_online[1, 2])
+
+# P(Loan = 0)
+p_loan0 <- sum(train_data$Personal.Loan == 0) / nrow(train_data)
+
+print(paste("P(CC = 1 | Loan = 1):", round(p_cc_given_loan1, 4)))
+print(paste("P(Online = 1 | Loan = 1):", round(p_online_given_loan1, 4)))
+print(paste("P(Loan = 1):", round(p_loan1, 4)))
+print(paste("P(CC = 1 | Loan = 0):", round(p_cc_given_loan0, 4)))
+print(paste("P(Online = 1 | Loan = 0):", round(p_online_given_loan0, 4)))
+print(paste("P(Loan = 0):", round(p_loan0, 4)))
+
+
+```
+### Task e
+```{r}
+p_cc <- sum(train_data$CreditCard == 1) / nrow(train_data)
+p_online <- sum(train_data$Online == 1) / nrow(train_data)
+
+# Naive Bayes Probability
+p_naive_bayes <- (p_cc_given_loan1 * p_online_given_loan1 * p_loan1) / (p_cc * p_online)
+print(paste("Naive Bayes Probability P(Loan = 1 | CC = 1, Online = 1):", round(p_naive_bayes, 4)))
+
+```
+
+### Task f
+```{r}
+
+comparison <- ifelse(abs(prob_acceptance - p_naive_bayes) < 0.01, "similar", "different")
+print(paste("The value from the pivot table in (b) is", round(prob_acceptance, 4), 
+            "and the value from the naive Bayes estimate in (e) is", round(p_naive_bayes, 4),
+            ". The two values are", comparison, "."))
+
+```
+
+### Task g
+```{r}
+#install.packages("e1071")
+library(e1071)
+
+model <- naiveBayes(Personal.Loan ~ CreditCard + Online, data=train_data)
+predicted_probs <- predict(model, newdata=data.frame(CreditCard=1, Online=1), type="raw")
+p_naive_bayes_R <- predicted_probs[2]
+print(paste("Predicted Probability using naiveBayes for P(Loan = 1 | CC = 1, Online = 1):", round(p_naive_bayes_R, 4)))
+
+```
