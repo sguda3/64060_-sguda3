@@ -1,0 +1,75 @@
+---
+title: "Assignment 04"
+author : "GUDA SAI ROHITH"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+```{r}
+
+# Loading the necessary libraries
+library(cluster)
+library(tidyverse)
+
+# Read the dataset
+df <- read.csv("Pharmaceuticals.csv")
+
+# Part a:
+
+# Select only the numerical variables for clustering
+ps <- df[, c("Market_Cap", "Beta", "PE_Ratio", "ROE", "ROA", "Asset_Turnover", "Leverage", "Rev_Growth", "Net_Profit_Margin")]
+
+# Standardize the data
+ps <- scale(ps)
+
+# Determine the number of clusters using the Silhouette Method
+sil_width <- numeric(15)
+for (i in 2:15) {
+  fit <- hclust(dist(ps), method = "ward.D2")
+  clus_labels <- cutree(fit, k = i)
+  sil_info <- silhouette(clus_labels, dist(ps))
+  sil_width[i] <- mean(sil_info[, 3])
+}
+plot(2:15, sil_width[2:15], type = "b", xlab = "Total Cluster Numbers", ylab = "Mean Silhouette Width")
+
+# Perform hierarchical clustering (Let's choose k=3 based on the Silhouette Method)
+fit <- hclust(dist(ps), method = "ward.D2")
+clus_labels <- cutree(fit, k = 3)
+
+# Plot the dendrogram
+plot(fit)
+
+# Part b:
+
+# Summarize clusters by median
+cluster_summary <- aggregate(ps, by = list(clus_labels), FUN = median)
+print("Cluster Summary:")
+print(cluster_summary)
+
+#  Part c:
+
+# Add cluster assignment to the original dataframe
+df$Cluster <- clus_labels
+
+pattern_median_rec <- aggregate(Median_Recommendation ~ Cluster, data = df, function(z) names(which.max(table(z))))
+pattern_location <- aggregate(Location ~ Cluster, data = df, function(z) names(which.max(table(z))))
+pattern_exchange <- aggregate(Exchange ~ Cluster, data = df, function(z) names(which.max(table(z))))
+
+print("Patterns in additional variables:")
+print(pattern_median_rec)
+print(pattern_location)
+print(pattern_exchange)
+
+
+# Part d:
+
+# Naming the clusters based on interpretation and pattern
+cluster_names <- c("High Growth, Emerging", "Stable, Low Leverage", "Diverse, High Profit")
+df$Cluster_Name <- as.factor(cluster_names[df$Cluster])
+
+# Show the first few rows of df to confirm cluster assignment and naming
+head(df)
+
+```
