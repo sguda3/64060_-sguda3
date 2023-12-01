@@ -1,0 +1,258 @@
+---
+title: "ASSIGNMENT 5"
+author: "SAI ROHITH GUDA"
+date: "11-30-2023"
+
+---
+
+## Introduction
+
+The data includes 16 variables with observations about various cereal components, such as the cereal's name, manufacturer, calories, protein, fats, sodium, potassium, fiber, and vitamins, along with information about 77 cereals arranged in rows. The Hierarchical Clustering Model, an unsupervised learning algorithm with an arbitrary number of clusters, is used for the analysis. However, make your selection based on a comparison of the various clusters that the data points have created. Using R, the analysis is completed.
+
+```{r libraries, echo=FALSE}
+
+#loading all the necessary libraries
+library(cluster)
+library(ggplot2)
+library(reshape2)
+```
+
+## Data Loading and Processing
+
+```{r loading data}
+# Load the data
+cereals <- read.csv("Cereals.csv")
+head(cereals)
+```
+
+Data processing is done by omitting the duplicated rows or null values from the data
+
+```{r}
+cereals<-na.omit(cereals)
+head(cereals)
+```
+
+## Data Selection and Normalization
+
+Using the scale() function, the data is normalized by dividing by the standard deviation and subtracting the mean from the numeric columns (in this case, 4 to 12).
+
+```{r}
+# Normalize the data
+cereals_norm <- scale(cereals[, 4:12])
+head(cereals_norm)
+```
+
+## Distance Matrix
+
+A dissimilarity matrix is computed using the Euclidean distance metric. This matrix captures the pairwise distances between observations in the normalized dataset.
+
+```{r}
+dissimilarity_matrix <- dist(cereals_norm, method = "euclidean")
+```
+
+## Hierarchical Cluster Analysis
+
+In statistics and data analysis, hierarchical cluster analysis, or HCA, is a technique used to cluster together related objects or data points. A hierarchical structure with related elements grouped together at varying levels of granularity is the intended method of data organization. This method is especially helpful for examining and displaying the underlying structure of a dataset. An illustration of the outcome of hierarchical clustering is frequently a dendrogram. A dendrogram is a diagram that resembles a tree and shows how the clusters are organized hierarchically. Each node in the tree represents a cluster, and the height at which branches merge represents the dissimilarity between clusters. The distance metric and linkage technique (which determines how far apart clusters are) that are selected can have a big influence on the clustering outcomes.
+
+Typical techniques for linking consist of:
+
+-   Single Linkage: Calculates the separation between the two clusters' nearest members.
+
+-   Complete Linkage: Measures the separation between the two clusters' furthest members, or complete linkage.
+
+-   Average Linkage: The average distance between each pair of members in the two clusters is measured by the Average Linkage.
+
+-   Ward's Method: Reduces the variance within each cluster using Ward's method.
+
+Because of its adaptability, hierarchical clustering can be used with a wide range of data types, including mixed, categorical, and numerical datasets. It is widely used in many domains where knowing the natural grouping of data is crucial, such as biology for classifying species, marketing for customer segmentation, and many more.
+
+```{r}
+agnes_single <- agnes(dissimilarity_matrix, method = "single")
+agnes_complete <- agnes(dissimilarity_matrix, method = "complete")
+agnes_average <- agnes(dissimilarity_matrix, method = "average")
+agnes_ward <- agnes(dissimilarity_matrix, method = "ward")
+```
+
+The Agnes function from the "cluster" library is used to carry out hierarchical clustering, employing the single, complete, average, and Ward's method linkage techniques.
+
+## Visualization by dendgram
+
+Dendrograms for each linkage method are plotted in a 2x2 layout using the par() function and plot().
+
+```{r}
+# Plot the dendrograms
+par(mfrow = c(2, 2))
+plot(agnes_single, main = "Single Linkage")
+plot(agnes_complete, main = "Complete Linkage")
+plot(agnes_average, main = "Average Linkage")
+plot(agnes_ward, main = "Ward's Method")
+
+```
+
+## Selecting the number of Clusters
+
+For complete linkage, the dendrogram is chopped at a height of three, and the resulting cluster assignments are kept in c.complete. The number of observations in each cluster can be printed using the table() function.
+
+```{r}
+# Cut the dendrogram at a height of 3 and obtain the cluster assignments
+c.complete <- cutree(agnes_complete, k = 3)
+# Print the number of observations in each cluster
+table(c.complete)
+# Cut the dendrogram at a height of 3 and obtain the cluster assignments
+c.single <- cutree(agnes_single, k = 3)
+# Print the number of observations in each cluster
+table(c.single)
+# Cut the dendrogram at a height of 3 and obtain the cluster assignments
+c.average <- cutree(agnes_average, k = 3)
+# Print the number of observations in each cluster
+table(c.average)
+# Cut the dendrogram at a height of 3 and obtain the cluster assignments
+c.ward <- cutree(agnes_ward, k = 3)
+# Print the number of observations in each cluster
+table(c.ward)
+```
+
+## Extracting Information from Clusters
+
+Noe aggregate each method of clusters to exttract information using the mean method to make the comparison easy
+
+```{r}
+# Extract information from each cluster for complete linkage
+cluster_means_complete <- aggregate(cereals_norm, by = list(Cluster = c.complete), FUN = mean)
+cluster_means_single <- aggregate(cereals_norm, by = list(Cluster = c.single), FUN = mean)
+cluster_means_average <- aggregate(cereals_norm, by = list(Cluster = c.average), FUN = mean)
+cluster_means_ward <- aggregate(cereals_norm, by = list(Cluster = c.ward), FUN = mean)
+
+head(cluster_means_complete)
+head(cluster_means_single)
+head(cluster_means_average)
+head(cluster_means_ward)
+```
+
+### Complete Linkage Method 
+
+#### Cluster 1:
+
+-   Low calories
+
+-   High protein
+
+-   Low fat
+
+-   High fiber
+
+-   Low carbohydrates
+
+-   Low sugars
+
+-   High potassium
+
+-   High vitamins
+
+#### Cluster 2:
+
+Moderate values for most variables.
+
+#### Cluster 3:
+
+Moderate values with a potential emphasis on higher fat.
+
+### Single Linkage Method
+
+#### Cluster 1:
+
+Similar characteristics to Cluster 1 of the Complete Linkage method.
+
+#### Cluster 2:
+
+Moderate values for most variables.
+
+#### Cluster 3:
+
+Moderate values with a potential emphasis on higher fat.
+
+### Average Linkage Method 
+
+#### Cluster 1:
+
+Similar characteristics to Cluster 1 of the Complete Linkage method.
+
+#### Cluster 2:
+
+-   High calories
+
+-   Moderate protein
+
+-   High fat
+
+-   Low fiber
+
+-   High carbohydrates
+
+-   Low sugars
+
+-   Moderate potassium
+
+-   Low vitamins
+
+#### Cluster 3:
+
+-   Low calories
+
+-   Low protein
+
+-   Low fat
+
+-   Low fiber
+
+-   Low carbohydrates
+
+-   Low sugars
+
+-   Low potassium
+
+-   Low vitamins
+
+### Ward's Method 
+
+#### Cluster 1:
+
+Similar characteristics to Cluster 1 of the Complete Linkage method.
+
+#### Cluster 2:
+
+Moderate values for most variables.
+
+#### Cluster 3:
+
+Moderate values with a potential emphasis on higher fat.
+
+### Conclusion 
+
+Based on the criteria of "Low Calories, High Protein, Low Fat, High Fiber, Low Carbohydrates, Low Sugars, High Potassium, High Vitamins," Cluster 1 from the Complete Linkage method seems to match these criteria the closest. It has low calories, high protein, low fat, high fiber, low carbohydrates, low sugars, high potassium, and high vitamins.
+```{r}
+
+# Extract data for Cluster 1 from complete linkage
+cluster1_complete <- subset(cluster_means_complete, Cluster == 1)
+
+# Melt the data for better plotting with ggplot
+melted_data <- melt(cluster1_complete, id.vars = "Cluster")
+
+# Create a bar plot using ggplot
+ggplot(melted_data, aes(x = variable, y = value, fill = variable)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Cluster 1 from Complete Linkage",
+       x = "Variables", y = "Values") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+## Conclusion
+Extracting the data from the cluster of the best cereals that will be allowed to the school's canteen
+```{r}
+# Extract data for Cluster 1 from complete linkage
+cluster1_complete <- subset(cereals, c.complete == 1)
+
+# Display the data
+head(cluster1_complete)
+```
+
